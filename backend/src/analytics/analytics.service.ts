@@ -17,8 +17,8 @@ export class AnalyticsService {
         DATE_TRUNC('week', completed_at) AS week,
         COUNT(*)::int AS completed_count
       FROM tasks
-      WHERE organization_id = ${organizationId}::uuid
-        AND status = 'COMPLETED'
+      WHERE organization_id = CAST(${organizationId} AS uuid)
+        AND status = 'COMPLETED'::"TaskStatus"
         AND completed_at >= NOW() - INTERVAL '12 weeks'
       GROUP BY week
       ORDER BY week ASC
@@ -60,8 +60,8 @@ export class AnalyticsService {
         ROUND(MAX(EXTRACT(EPOCH FROM (completed_at - created_at)) / 3600)::numeric, 2) AS max_hours,
         COUNT(*)::int AS completed_count
       FROM tasks
-      WHERE organization_id = ${organizationId}::uuid
-        AND status = 'COMPLETED'
+      WHERE organization_id = CAST(${organizationId} AS uuid)
+        AND status = 'COMPLETED'::"TaskStatus"
         AND completed_at IS NOT NULL
     `;
 
