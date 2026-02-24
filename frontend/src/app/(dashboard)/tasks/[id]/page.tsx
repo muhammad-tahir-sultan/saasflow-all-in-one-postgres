@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTask, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { TaskStatusBadge } from '@/components/tasks/TaskStatusBadge';
+import { ConfirmDeleteModal } from '@/components/tasks/ConfirmDeleteModal';
 import { toast } from '@/components/ui/Toast';
 import { formatDate, formatRelativeTime } from '@/lib/utils';
 import type { TaskStatus } from '@/types/task.types';
@@ -21,6 +23,7 @@ export default function TaskDetailPage() {
     const { data: task, isLoading } = useTask(params.id as string);
     const updateTask = useUpdateTask();
     const deleteTask = useDeleteTask();
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     if (isLoading) {
         return (
@@ -48,7 +51,6 @@ export default function TaskDetailPage() {
     };
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this task?')) return;
         try {
             await deleteTask.mutateAsync(task.id);
             toast('success', 'Task deleted');
@@ -172,7 +174,10 @@ export default function TaskDetailPage() {
                     {/* Delete */}
                     {isAdmin && (
                         <div className="border-t border-surface-100 pt-4">
-                            <Button variant="danger" size="sm" onClick={handleDelete}>
+                            <Button variant="danger" size="sm" onClick={() => setShowDeleteModal(true)}>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
                                 Delete Task
                             </Button>
                         </div>
@@ -189,6 +194,15 @@ export default function TaskDetailPage() {
                     {JSON.stringify(task.metadata, null, 2)}
                 </pre>
             </Card>
+
+            {/* Delete Confirmation Portal Modal */}
+            <ConfirmDeleteModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                isLoading={deleteTask.isPending}
+                taskTitle={task.title}
+            />
         </div>
     );
 }
