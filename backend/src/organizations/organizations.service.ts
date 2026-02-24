@@ -34,18 +34,20 @@ export class OrganizationsService {
     }
 
     async findById(id: string) {
-        const org = await this.prisma.organization.findUnique({
-            where: { id },
-            include: {
-                members: {
-                    include: { user: { select: { id: true, email: true, name: true } } },
+        return this.prisma.withTenant(id, async (tx) => {
+            const org = await tx.organization.findUnique({
+                where: { id },
+                include: {
+                    members: {
+                        include: { user: { select: { id: true, email: true, name: true } } },
+                    },
+                    _count: { select: { tasks: true, jobs: true } },
                 },
-                _count: { select: { tasks: true, jobs: true } },
-            },
-        });
+            });
 
-        if (!org) throw new NotFoundException('Organization not found');
-        return org;
+            if (!org) throw new NotFoundException('Organization not found');
+            return org;
+        });
     }
 
     async inviteMember(organizationId: string, dto: InviteMemberDto) {
