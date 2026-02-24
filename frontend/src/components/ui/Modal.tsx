@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
 interface ModalProps {
@@ -12,15 +13,29 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
         };
-        if (isOpen) document.addEventListener('keydown', handleEsc);
-        return () => document.removeEventListener('keydown', handleEsc);
+
+        if (isOpen) {
+            document.addEventListener('keydown', handleEsc);
+            document.body.style.overflow = 'hidden';
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleEsc);
+            document.body.style.overflow = '';
+        };
     }, [isOpen, onClose]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
     const sizes = {
         sm: 'max-w-sm',
@@ -28,8 +43,8 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         lg: 'max-w-2xl',
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-surface-950/40 backdrop-blur-sm animate-fade-in"
@@ -58,6 +73,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                 )}
                 <div className="p-6">{children}</div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }

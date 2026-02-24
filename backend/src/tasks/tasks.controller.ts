@@ -36,11 +36,10 @@ export class TasksController {
     }
 
     @Post()
-    @UsePipes(new ZodValidationPipe(createTaskSchema))
     async create(
         @OrganizationId() orgId: string,
         @CurrentUser() user: JwtUser,
-        @Body() dto: CreateTaskDto,
+        @Body(new ZodValidationPipe(createTaskSchema)) dto: CreateTaskDto,
     ) {
         return this.tasksService.create(orgId, user.userId, dto);
     }
@@ -74,11 +73,10 @@ export class TasksController {
     }
 
     @Patch(':id')
-    @UsePipes(new ZodValidationPipe(updateTaskSchema))
     async update(
         @OrganizationId() orgId: string,
         @Param('id') id: string,
-        @Body() dto: UpdateTaskDto,
+        @Body(new ZodValidationPipe(updateTaskSchema)) dto: UpdateTaskDto,
     ) {
         return this.tasksService.update(id, orgId, dto);
     }
