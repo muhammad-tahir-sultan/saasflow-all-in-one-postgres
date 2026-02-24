@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  backend:
+    command: npm run start:dev
+    environment:
+      NODE_ENV: development
+
+  frontend:
+    command: npm run dev
+    environment:
+      NODE_ENV: development

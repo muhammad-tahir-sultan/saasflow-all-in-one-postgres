@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Organization (Tenant) ───────────────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members   OrganizationMember[]
+  tasks     Task[]
+  jobs      Job[]
+
+  @@map("organizations")
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  name           String
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  refreshToken   String?  @map("refresh_token")
+
+  memberships    OrganizationMember[]
+  assignedTasks  Task[]   @relation("assignee")
+  createdTasks   Task[]   @relation("creator")
+
+  @@map("users")
+}
+
+// ─── Organization Membership ─────────────────────────────────────────────────
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  userId         String       @map("user_id")
+  role           MemberRole   @default(MEMBER)
+  joinedAt       DateTime     @default(now()) @map("joined_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@map("organization_members")
+}
+
+enum MemberRole {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+// ─── Task ────────────────────────────────────────────────────────────────────
+
+model Task {
+  id             String     @id @default(uuid())
+  organizationId String     @map("organization_id")
+  title          String
+  description    String?
+  status         TaskStatus @default(PENDING)
+  assigneeId     String?    @map("assignee_id")
+  creatorId      String     @map("creator_id")
+  metadata       Json       @default("{}") @db.JsonB
+  completedAt    DateTime?  @map("completed_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  // tsvector column managed by PG trigger (raw SQL migration)
+  // searchVector  Unsupported("tsvector")?  @map("search_vector")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  assignee       User?        @relation("assignee", fields: [assigneeId], references: [id])
+  creator        User         @relation("creator", fields: [creatorId], references: [id])
+
+  @@index([organizationId])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([organizationId, status])
+  @@map("tasks")
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
+
+// ─── Job (Background Queue — replaces Redis/BullMQ) ──────────────────────────
+
+model Job {
+  id             String    @id @default(uuid())
+  organizationId String    @map("organization_id")
+  type           String
+  status         JobStatus @default(PENDING)
+  payload        Json      @default("{}") @db.JsonB
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3) @map("max_attempts")
+  error          String?
+  scheduledAt    DateTime  @default(now()) @map("scheduled_at")
+  startedAt      DateTime? @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([status, scheduledAt])
+  @@map("jobs")
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
