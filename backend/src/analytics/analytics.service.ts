@@ -17,8 +17,8 @@ export class AnalyticsService {
         DATE_TRUNC('week', completed_at) AS week,
         COUNT(*)::int AS completed_count
       FROM tasks
-      WHERE organization_id = CAST(${organizationId} AS uuid)
-        AND status = 'COMPLETED'::"TaskStatus"
+      WHERE organization_id::text = ${organizationId}
+        AND status = 'COMPLETED'
         AND completed_at >= NOW() - INTERVAL '12 weeks'
       GROUP BY week
       ORDER BY week ASC
@@ -36,14 +36,14 @@ export class AnalyticsService {
           COUNT(*)::int AS task_count,
           RANK() OVER (ORDER BY COUNT(*) DESC) AS rank
         FROM tasks
-        WHERE organization_id = CAST(${organizationId} AS uuid)
-          AND status = 'COMPLETED'::"TaskStatus"
+        WHERE organization_id::text = ${organizationId}
+          AND status = 'COMPLETED'
           AND assignee_id IS NOT NULL
         GROUP BY assignee_id
       )
       SELECT u.id, u.name, u.email, uc.task_count, uc.rank::int
       FROM user_counts uc
-      JOIN users u ON u.id = uc.assignee_id
+      JOIN users u ON u.id::text = uc.assignee_id::text
       ORDER BY rank
       LIMIT 10
     `;
@@ -60,8 +60,8 @@ export class AnalyticsService {
         ROUND(MAX(EXTRACT(EPOCH FROM (completed_at - created_at)) / 3600)::numeric, 2) AS max_hours,
         COUNT(*)::int AS completed_count
       FROM tasks
-      WHERE organization_id = CAST(${organizationId} AS uuid)
-        AND status = 'COMPLETED'::"TaskStatus"
+      WHERE organization_id::text = ${organizationId}
+        AND status = 'COMPLETED'
         AND completed_at IS NOT NULL
     `;
 

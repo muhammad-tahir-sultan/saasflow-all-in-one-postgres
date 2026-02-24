@@ -15,7 +15,7 @@ export class TasksRepository {
              assignee_id as "assigneeId", creator_id as "creatorId",
              ts_rank(search_vector, plainto_tsquery('english', ${query})) as rank
       FROM tasks
-      WHERE organization_id = CAST(${organizationId} AS uuid)
+      WHERE organization_id::text = ${organizationId}
         AND search_vector @@ plainto_tsquery('english', ${query})
       ORDER BY rank DESC
       LIMIT ${limit}
@@ -32,7 +32,7 @@ export class TasksRepository {
       SELECT id, title, description, status, metadata, created_at as "createdAt",
              assignee_id as "assigneeId", creator_id as "creatorId"
       FROM tasks
-      WHERE organization_id = CAST(${organizationId} AS uuid)
+      WHERE organization_id::text = ${organizationId}
         AND metadata @> ${filterJson}::jsonb
       ORDER BY created_at DESC
     `;

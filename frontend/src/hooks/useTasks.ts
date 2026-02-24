@@ -11,7 +11,7 @@ export function useTasksList() {
             const params: Record<string, string> = { limit: '20' };
             if (pageParam) params.cursor = pageParam as string;
             const res = await api.get('/tasks', { params });
-            return res.data.data;
+            return res.data;
         },
         initialPageParam: undefined as string | undefined,
         getNextPageParam: (lastPage) =>

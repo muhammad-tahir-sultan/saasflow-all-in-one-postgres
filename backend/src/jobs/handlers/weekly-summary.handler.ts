@@ -13,12 +13,12 @@ export class WeeklySummaryHandler {
     // Gather stats for the past week
     const summary: any[] = await this.prisma.$queryRaw`
       SELECT
-        COUNT(*) FILTER (WHERE status = 'COMPLETED'::"TaskStatus" AND completed_at >= NOW() - INTERVAL '7 days')::int as completed_this_week,
-        COUNT(*) FILTER (WHERE status = 'PENDING'::"TaskStatus")::int as pending_tasks,
-        COUNT(*) FILTER (WHERE status = 'IN_PROGRESS'::"TaskStatus")::int as in_progress_tasks,
+        COUNT(*) FILTER (WHERE status = 'COMPLETED' AND completed_at >= NOW() - INTERVAL '7 days')::int as completed_this_week,
+        COUNT(*) FILTER (WHERE status = 'PENDING')::int as pending_tasks,
+        COUNT(*) FILTER (WHERE status = 'IN_PROGRESS')::int as in_progress_tasks,
         COUNT(*)::int as total_tasks
       FROM tasks
-      WHERE organization_id = CAST(${organizationId} AS uuid)
+      WHERE organization_id::text = ${organizationId}
     `;
 
     this.logger.log(`Weekly summary generated: ${JSON.stringify(summary[0])}`);
